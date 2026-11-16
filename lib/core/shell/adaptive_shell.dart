@@ -58,8 +58,8 @@ class AdaptiveShell extends ConsumerWidget {
               destinations: [
                 for (final d in destinations)
                   NavigationRailDestination(
-                    icon: Icon(d.icon),
-                    selectedIcon: Icon(d.selectedIcon),
+                    icon: _BadgedIcon(destination: d, icon: d.icon),
+                    selectedIcon: _BadgedIcon(destination: d, icon: d.selectedIcon),
                     label: Text(d.label),
                   ),
               ],
@@ -83,14 +83,32 @@ class AdaptiveShell extends ConsumerWidget {
             destinations: [
               for (final d in destinations)
                 NavigationDestination(
-                  icon: Icon(d.icon),
-                  selectedIcon: Icon(d.selectedIcon),
-                  label: d.label,
+                  icon: _BadgedIcon(destination: d, icon: d.icon),
+                  selectedIcon: _BadgedIcon(destination: d, icon: d.selectedIcon),
+                  label: d.shortLabel ?? d.label,
                 ),
             ],
           ),
         );
     }
+  }
+}
+
+/// Иконка пункта меню со счётчиком из [ModuleDestination.badge].
+class _BadgedIcon extends ConsumerWidget {
+  const _BadgedIcon({required this.destination, required this.icon});
+
+  final ModuleDestination destination;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final n = destination.badge == null ? 0 : ref.watch(destination.badge!);
+    return Badge(
+      isLabelVisible: n > 0,
+      label: Text('$n'),
+      child: Icon(icon),
+    );
   }
 }
 
@@ -217,6 +235,13 @@ class _SidebarItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelLarge?.copyWith(color: fg)),
               ),
+              if (destination.badge != null)
+                Consumer(builder: (context, ref, _) {
+                  final n = ref.watch(destination.badge!);
+                  return n == 0
+                      ? const SizedBox.shrink()
+                      : Text('$n', style: theme.textTheme.labelLarge?.copyWith(color: fg));
+                }),
             ]),
           ),
         ),

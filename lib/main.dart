@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/data/data_store.dart';
+import 'core/desktop/desktop.dart';
 import 'core/data/log_storage.dart';
 import 'core/data/providers.dart';
 import 'core/module/module_registry.dart';
@@ -13,7 +14,7 @@ import 'core/router.dart';
 import 'core/settings/settings_controller.dart';
 import 'core/theme/app_theme.dart';
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final supportDir = await getApplicationSupportDirectory();
@@ -26,8 +27,9 @@ Future<void> main() async {
       dataStoreProvider.overrideWithValue(store),
     ],
   );
+  await DesktopIntegration.init(container, minimized: args.contains(minimizedFlag));
   for (final m in container.read(enabledModulesProvider)) {
-    await m.init();
+    await m.init(container);
   }
   runApp(UncontrolledProviderScope(container: container, child: const BeatApp()));
 }

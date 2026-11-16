@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/module/app_module.dart';
+import '../../core/reminders/reminder.dart';
 import 'day_page.dart';
 import 'day_providers.dart';
 import 'widgets/day_item_editor.dart';
@@ -27,6 +29,9 @@ class MyDayModule extends AppModule {
           builder: (_) => const DayPage(),
         ),
       ];
+
+  @override
+  ProviderListenable<List<Reminder>> get reminders => dayRemindersProvider;
 
   @override
   Future<void> Function(BuildContext context)? get quickAdd => (context) {

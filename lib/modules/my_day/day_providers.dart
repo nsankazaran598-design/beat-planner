@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/data/providers.dart';
+import '../../core/reminders/reminder.dart';
 import '../../core/ui/format.dart';
 import 'day_model.dart';
 import 'day_repository.dart';
@@ -52,3 +53,19 @@ final weekItemsProvider = Provider.family<List<DayItem>, DateTime>((ref, monday)
 final upcomingRemindersProvider = Provider<List<DayItem>>(
   (ref) => ref.watch(dayRepositoryProvider).upcomingReminders(ref.watch(clockProvider)()),
 );
+
+/// Напоминания «Моего дня» для модуля «Напоминания».
+final dayRemindersProvider = Provider<List<Reminder>>((ref) {
+  final repo = ref.watch(dayRepositoryProvider);
+  return [
+    for (final i in repo.withReminders())
+      Reminder(
+        key: 'day_item:${i.id}',
+        title: i.title,
+        body: '${formatRelativeDateTime(i.startsAt!)}'
+            '${i.note.isEmpty ? '' : ' · ${i.note}'}',
+        at: i.remindAt!,
+        route: '/day',
+      ),
+  ];
+});

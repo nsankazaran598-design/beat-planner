@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/desktop/desktop.dart';
 import '../../core/module/app_module.dart';
 import '../../core/module/module_registry.dart';
 import '../../core/settings/settings_controller.dart';
@@ -68,6 +69,11 @@ class _SettingsView extends ConsumerWidget {
           selected: {settings.themeMode},
           onSelectionChanged: (s) => controller.setThemeMode(s.first),
         ),
+        if (isDesktopWindows) ...[
+          const SizedBox(height: 32),
+          Text('Windows', style: theme.textTheme.titleMedium),
+          const _DesktopSettings(),
+        ],
         const SizedBox(height: 32),
         Text('Модули', style: theme.textTheme.titleMedium),
         const SizedBox(height: 4),
@@ -86,5 +92,31 @@ class _SettingsView extends ConsumerWidget {
             ),
       ],
     );
+  }
+}
+
+class _DesktopSettings extends ConsumerWidget {
+  const _DesktopSettings();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(desktopSettingsProvider);
+    final c = ref.read(desktopSettingsProvider.notifier);
+    return Column(children: [
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Сворачивать в трей при закрытии'),
+        subtitle: const Text('Напоминания продолжат приходить, пока beat в трее'),
+        value: s.closeToTray,
+        onChanged: c.setCloseToTray,
+      ),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Запускать вместе с Windows'),
+        subtitle: const Text('beat стартует свёрнутым в трей'),
+        value: s.launchAtStartup,
+        onChanged: c.setLaunchAtStartup,
+      ),
+    ]);
   }
 }

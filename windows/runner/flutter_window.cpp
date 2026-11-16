@@ -1,6 +1,7 @@
 #include "flutter_window.h"
 
 #include <optional>
+#include <string>
 
 #include "flutter/generated_plugin_registrant.h"
 
@@ -27,8 +28,13 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
-  flutter_controller_->engine()->SetNextFrameCallback([&]() {
-    this->Show();
+  // При автозапуске (--minimized) окно остаётся скрытым: приложение живёт в трее.
+  const bool start_minimized =
+      std::wstring(::GetCommandLineW()).find(L"--minimized") != std::wstring::npos;
+  flutter_controller_->engine()->SetNextFrameCallback([&, start_minimized]() {
+    if (!start_minimized) {
+      this->Show();
+    }
   });
 
   // Flutter can complete the first frame before the "show window" callback is

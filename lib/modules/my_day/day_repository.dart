@@ -28,6 +28,10 @@ class DayRepository {
       });
   }
 
+  /// Все невыполненные дела с напоминанием.
+  Iterable<DayItem> withReminders() =>
+      _all().where((i) => !i.done && i.remindAt != null);
+
   /// Ближайшие напоминания, начиная с [now].
   List<DayItem> upcomingReminders(DateTime now, {int limit = 5}) {
     final list = _all()

@@ -200,7 +200,7 @@ class UpcomingReminders extends ConsumerWidget {
             ),
           ),
         const SizedBox(height: 12),
-        Text('Уведомления на устройстве появятся в v0.4',
+        Text('Уведомления в приложении и на устройстве',
             style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
       ],
     );

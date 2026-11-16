@@ -147,4 +147,13 @@ void main() {
         await t.tap(find.text('Встреча с командой').first);
         await t.pumpAndSettle();
       }));
+
+  testWidgets('reminders desktop', (t) => _shot(t, 'reminders_desktop_light', const Size(1440, 1000), ThemeMode.light, then: (t) async {
+        await t.tap(find.text('Напоминания').first);
+        await t.pumpAndSettle();
+      }));
+  testWidgets('reminders phone', (t) => _shot(t, 'reminders_phone_dark', const Size(400, 860), ThemeMode.dark, then: (t) async {
+        await t.tap(find.byIcon(Icons.notifications_none));
+        await t.pumpAndSettle();
+      }));
 }

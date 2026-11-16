@@ -1,4 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:material_ui/material_ui.dart';
+
+import '../reminders/reminder.dart';
 
 /// Пункт навигации, который модуль добавляет в меню приложения.
 class ModuleDestination {
@@ -9,17 +13,25 @@ class ModuleDestination {
     required this.selectedIcon,
     required this.builder,
     this.order = 100,
+    this.badge,
+    this.shortLabel,
   });
 
   /// Путь экрана, например `/kanban`.
   final String path;
   final String label;
+
+  /// Короткая подпись для нижней панели телефона (если [label] не помещается).
+  final String? shortLabel;
   final IconData icon;
   final IconData selectedIcon;
   final WidgetBuilder builder;
 
   /// Чем меньше число, тем выше пункт в меню.
   final int order;
+
+  /// Число на пункте меню (например, сколько напоминаний сегодня). 0 — скрыто.
+  final ProviderListenable<int>? badge;
 }
 
 /// Базовый контракт функционального модуля.
@@ -56,6 +68,10 @@ abstract class AppModule {
   /// несколько модулей, побеждает модуль текущего экрана, иначе первый.
   Future<void> Function(BuildContext context)? get quickAdd => null;
 
+  /// Напоминания модуля. Модуль «Напоминания» собирает их со всех
+  /// включённых модулей и показывает уведомления.
+  ProviderListenable<List<Reminder>>? get reminders => null;
+
   /// Вызывается один раз при старте приложения, если модуль включён.
-  Future<void> init() async {}
+  Future<void> init(ProviderContainer container) async {}
 }
