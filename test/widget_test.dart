@@ -39,7 +39,7 @@ void main() {
     expect(find.text('beat'), findsOneWidget);
     expect(find.text('Новая задача'), findsOneWidget);
     expect(find.text('МОИ ПРОЕКТЫ'), findsOneWidget);
-    for (final label in ['Проекты', 'Мой день', 'Напоминания', 'ИИ', 'Настройки']) {
+    for (final label in ['Проекты', 'Мой день', 'Напоминания', 'ИИ и подключения', 'Синхронизация', 'Настройки']) {
       expect(find.text(label), findsWidgets, reason: label);
     }
   });

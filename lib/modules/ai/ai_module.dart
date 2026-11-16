@@ -1,7 +1,12 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/agent/agent_tool.dart';
 import '../../core/module/app_module.dart';
-import '../../core/shell/page_scaffold.dart';
+import 'agent_server.dart';
+import 'ai_page.dart';
+import 'tool_gateway.dart';
+import 'widgets/assistant_panel.dart';
 
 class AiModule extends AppModule {
   const AiModule();
@@ -17,19 +22,21 @@ class AiModule extends AppModule {
   List<ModuleDestination> get destinations => [
         ModuleDestination(
           path: '/ai',
-          label: 'ИИ',
+          label: 'ИИ и подключения',
+          shortLabel: 'ИИ',
           icon: Icons.auto_awesome_outlined,
           selectedIcon: Icons.auto_awesome,
           order: 40,
-          builder: (_) => const PageScaffold(
-            breadcrumb: 'Рабочее пространство / Настройки',
-            title: 'ИИ и подключения',
-            subtitle: 'Ваш помощник, ваш провайдер, ваши правила',
-            body: ComingSoon(
-              icon: Icons.auto_awesome_outlined,
-              text: 'Подключение ИИ появится в v0.6',
-            ),
-          ),
+          badge: pendingCountProvider,
+          builder: (_) => const AiPage(),
         ),
       ];
+
+  @override
+  AssistantPanelBuilder get assistantPanel =>
+      (ctx) => AssistantPanel(assistantContext: ctx);
+
+  @override
+  Future<void> init(ProviderContainer container) =>
+      container.read(agentServerProvider.notifier).init();
 }

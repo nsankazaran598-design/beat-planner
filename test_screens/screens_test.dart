@@ -9,13 +9,18 @@ import 'package:beat/core/data/log_storage.dart';
 import 'package:beat/core/data/providers.dart';
 import 'package:beat/core/settings/settings_controller.dart';
 import 'package:beat/core/ui/format.dart';
+import 'package:beat/core/agent/agent_tool.dart';
 import 'package:beat/main.dart';
+import 'package:beat/modules/ai/ai_settings.dart';
+import 'package:beat/modules/ai/assistant_controller.dart';
+import 'package:beat/modules/ai/llm_client.dart';
 import 'package:beat/modules/my_day/day_model.dart';
 import 'package:beat/modules/my_day/day_providers.dart';
 import 'package:beat/modules/kanban/kanban_model.dart';
 import 'package:beat/modules/kanban/kanban_providers.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +42,7 @@ Future<void> _loadFonts() async {
 final _now = DateTime(2026, 11, 16, 12, 15);
 
 Map<String, Object> extraPrefs = {};
+List<Override> extraOverrides = [];
 
 Future<ProviderContainer> _seed(ThemeMode mode) async {
   SharedPreferences.setMockInitialValues({'settings.themeMode': mode.name, ...extraPrefs});
@@ -46,6 +52,7 @@ Future<ProviderContainer> _seed(ThemeMode mode) async {
     sharedPreferencesProvider.overrideWithValue(prefs),
     dataStoreProvider.overrideWithValue(store),
     clockProvider.overrideWithValue(() => _now),
+    ...extraOverrides,
   ]);
   final day = c.read(dayRepositoryProvider);
   final d = DateTime(2026, 11, 16);
@@ -186,4 +193,48 @@ void main() {
         await t.tap(find.text('Ещё'));
         await t.pumpAndSettle();
       }));
+
+  testWidgets('ai page desktop', (t) => _shot(t, 'ai_desktop_light', const Size(1440, 1000), ThemeMode.light, then: (t) async {
+        await t.tap(find.text('ИИ и подключения').first);
+        await t.pumpAndSettle();
+      }));
+  testWidgets('ai page phone', (t) => _shot(t, 'ai_phone_dark', const Size(400, 860), ThemeMode.dark, then: (t) async {
+        await t.tap(find.byIcon(Icons.auto_awesome_outlined).last);
+        await t.pumpAndSettle();
+      }));
+  testWidgets('kanban with assistant', (t) async {
+    final store = MemorySecretStore();
+    await store.write(apiKeySecret, 'sk-test');
+    extraOverrides = [
+      secretStoreProvider.overrideWithValue(store),
+      sessionFactoryProvider.overrideWithValue(
+          ({required settings, required apiKey, required system, required tools}) => _FakeSession()),
+    ];
+    addTearDown(() => extraOverrides = []);
+    await _shot(t, 'kanban_ai_light', const Size(1600, 1000), ThemeMode.light, then: (t) async {
+      await t.pumpAndSettle();
+      final ctx = ProviderScope.containerOf(t.element(find.byType(BeatApp)));
+      await t.runAsync(() => ctx.read(assistantProvider.notifier).send(
+          'Что сейчас важнее всего для запуска?',
+          const AssistantContext(label: 'Контекст: Запуск продукта', instructions: '')));
+      await t.pumpAndSettle();
+    });
+  });
+}
+
+class _FakeSession implements LlmSession {
+  int _n = 0;
+  @override
+  Future<LlmTurn> send({String? userText, List<ToolResultMsg> toolResults = const []}) async {
+    switch (_n++) {
+      case 0:
+        return const LlmTurn(text: '', calls: [ToolCall(id: '1', name: 'list_projects', args: {})]);
+      case 1:
+        return const LlmTurn(
+            text: 'Начните с главного экрана: он разблокирует онбординг и тексты. Предлагаю шаг:',
+            calls: [ToolCall(id: '2', name: 'create_task', args: {'project_id': 'x', 'title': 'Уточнить основной сценарий'})]);
+      default:
+        return const LlmTurn(text: 'Добавлю после вашего подтверждения.', calls: []);
+    }
+  }
 }

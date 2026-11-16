@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/agent/agent_tool.dart';
 import '../../core/module/app_module.dart';
 import 'kanban_page.dart';
 import 'kanban_providers.dart';
 import 'widgets/project_actions.dart';
 import 'widgets/task_editor.dart';
+import 'kanban_tools.dart';
 
 class KanbanModule extends AppModule {
   const KanbanModule();
@@ -42,4 +44,7 @@ class KanbanModule extends AppModule {
           await showTaskEditor(context, projectId: project.id);
         }
       };
+
+  @override
+  List<AgentTool> get agentTools => kanbanTools;
 }

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:material_ui/material_ui.dart';
 
+import '../agent/agent_tool.dart';
 import '../reminders/reminder.dart';
 
 /// Пункт навигации, который модуль добавляет в меню приложения.
@@ -71,6 +72,12 @@ abstract class AppModule {
   /// Напоминания модуля. Модуль «Напоминания» собирает их со всех
   /// включённых модулей и показывает уведомления.
   ProviderListenable<List<Reminder>>? get reminders => null;
+
+  /// Инструменты для ИИ (встроенный помощник, MCP, REST API).
+  List<AgentTool> get agentTools => const [];
+
+  /// Панель ИИ-помощника, которую другие модули встраивают в свои экраны.
+  AssistantPanelBuilder? get assistantPanel => null;
 
   /// Вызывается один раз при старте приложения, если модуль включён.
   Future<void> init(ProviderContainer container) async {}

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/agent/agent_tool.dart';
 import '../../core/shell/breakpoints.dart';
 import '../../core/shell/page_scaffold.dart';
 import 'kanban_model.dart';
@@ -35,20 +36,65 @@ class KanbanPage extends ConsumerWidget {
             label: const Text('Добавить задачу'),
           );
 
+    final panel = ref.watch(assistantPanelProvider);
+    final assistant = AssistantContext(
+      label: 'Контекст: ${project.name}',
+      instructions: 'Пользователь смотрит доску проекта «${project.name}» '
+          '(project_id: ${project.id}). Вопросы по умолчанию — про этот проект.',
+    );
+    // Панель помощника справа помещается только на широком экране.
+    final inlinePanel = panel != null && MediaQuery.sizeOf(context).width >= 1400;
+
+    final board = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _Filters(),
+        const SizedBox(height: 20),
+        Expanded(child: BoardView(project: project)),
+      ],
+    );
+
     return PageScaffold(
       breadcrumb: 'Рабочее пространство / Проекты',
       title: project.name,
-      titleTrailing: _ProjectMenu(project: project),
+      titleTrailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        _ProjectMenu(project: project),
+        if (panel != null && !inlinePanel)
+          IconButton(
+            tooltip: 'ИИ-помощник',
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              useRootNavigator: true,
+              isScrollControlled: true,
+              useSafeArea: true,
+              showDragHandle: true,
+              builder: (ctx) => Padding(
+                padding: EdgeInsets.fromLTRB(
+                    12, 0, 12, 12 + MediaQuery.viewInsetsOf(ctx).bottom),
+                child: SizedBox(
+                  height: MediaQuery.sizeOf(ctx).height * 0.8,
+                  child: panel(assistant),
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.auto_awesome_outlined),
+          ),
+      ]),
       subtitle: project.description.isEmpty ? null : project.description,
       action: addTask,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _Filters(),
-          const SizedBox(height: 20),
-          Expanded(child: BoardView(project: project)),
-        ],
-      ),
+      body: inlinePanel
+          ? Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Expanded(child: board),
+              const SizedBox(width: 20),
+              SizedBox(
+                width: 300,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: panel(assistant),
+                ),
+              ),
+            ])
+          : board,
     );
   }
 }
