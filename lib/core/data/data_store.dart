@@ -23,6 +23,9 @@ class Record {
 /// Запись для пакетного изменения.
 typedef Change = ({String entity, String id, Map<String, Object?> fields});
 
+/// Кусок журнала одного устройства, начиная со строки [from].
+typedef LogSlice = ({int from, List<String> lines});
+
 /// Хранилище данных приложения.
 ///
 /// Источник истины — журналы событий всех устройств. Состояние в памяти
@@ -36,19 +39,68 @@ class DataStore extends ChangeNotifier {
   final LogStorage _storage;
   final HlcClock _clock;
   final Map<String, Map<String, Record>> _data = {};
+
+  /// Сырые строки журналов всех устройств (для синхронизации).
+  final Map<String, List<String>> _lines = {};
   Future<void> _writes = Future.value();
 
   static Future<DataStore> open(LogStorage storage) async {
     final deviceId = await storage.loadOrCreateDeviceId();
     final store = DataStore._(deviceId, storage);
     final logs = await storage.readLogs();
-    for (final lines in logs.values) {
-      for (final line in lines) {
+    for (final e in logs.entries) {
+      store._lines[e.key] = [...e.value];
+      for (final line in e.value) {
         final op = Op.tryDecode(line);
         if (op != null) store._apply(op);
       }
     }
     return store;
+  }
+
+  // ---------- Синхронизация ----------
+
+  /// Сколько строк журнала каждого устройства есть здесь.
+  Map<String, int> get vector => {for (final e in _lines.entries) e.key: e.value.length};
+
+  /// Строки, которых нет у собеседника с вектором [remote]:
+  /// id устройства → (с какой строки, строки).
+  Map<String, LogSlice> linesSince(Map<String, int> remote) => {
+        for (final e in _lines.entries)
+          if (e.value.length > (remote[e.key] ?? 0))
+            e.key: (
+              from: remote[e.key] ?? 0,
+              lines: e.value.sublist(remote[e.key] ?? 0),
+            ),
+      };
+
+  /// Принимает строки чужих журналов. Перекрывающиеся строки пропускаются,
+  /// а кусок с «дырой» (начинается дальше, чем у нас есть) отбрасывается —
+  /// он придёт целиком в следующий раз. Возвращает число новых строк.
+  Future<int> mergeRemote(Map<String, LogSlice> slices) async {
+    var added = 0;
+    var changed = false;
+    for (final e in slices.entries) {
+      // Свой журнал пишет только это устройство.
+      if (e.key == deviceId) continue;
+      final have = _lines[e.key]?.length ?? 0;
+      final slice = e.value;
+      if (slice.from > have) continue;
+      final skip = have - slice.from;
+      if (skip >= slice.lines.length) continue;
+      final fresh = slice.lines.sublist(skip);
+      _lines.putIfAbsent(e.key, () => []).addAll(fresh);
+      final device = e.key;
+      _writes = _writes.then((_) => _storage.append(device, fresh));
+      for (final line in fresh) {
+        final op = Op.tryDecode(line);
+        if (op != null) changed |= _apply(op);
+      }
+      added += fresh.length;
+    }
+    if (changed) notifyListeners();
+    await _writes;
+    return added;
   }
 
   String newId() => generateId();
@@ -82,6 +134,7 @@ class DataStore extends ChangeNotifier {
       _apply(op);
       lines.add(op.encode());
     }
+    _lines.putIfAbsent(deviceId, () => []).addAll(lines);
     notifyListeners();
     return _writes = _writes.then((_) => _storage.append(deviceId, lines));
   }

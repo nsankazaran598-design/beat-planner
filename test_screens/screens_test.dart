@@ -1,6 +1,7 @@
 // Снимки экранов для визуальной проверки (не входят в CI).
 // Запуск: flutter test test_screens --update-goldens
 // ignore_for_file: invalid_use_of_visible_for_testing_member
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:beat/core/data/data_store.dart';
@@ -35,8 +36,10 @@ Future<void> _loadFonts() async {
 
 final _now = DateTime(2026, 11, 16, 12, 15);
 
+Map<String, Object> extraPrefs = {};
+
 Future<ProviderContainer> _seed(ThemeMode mode) async {
-  SharedPreferences.setMockInitialValues({'settings.themeMode': mode.name});
+  SharedPreferences.setMockInitialValues({'settings.themeMode': mode.name, ...extraPrefs});
   final prefs = await SharedPreferences.getInstance();
   final store = await DataStore.open(MemoryLogStorage());
   final c = ProviderContainer(overrides: [
@@ -154,6 +157,33 @@ void main() {
       }));
   testWidgets('reminders phone', (t) => _shot(t, 'reminders_phone_dark', const Size(400, 860), ThemeMode.dark, then: (t) async {
         await t.tap(find.byIcon(Icons.notifications_none));
+        await t.pumpAndSettle();
+      }));
+
+  testWidgets('sync intro', (t) => _shot(t, 'sync_intro_light', const Size(1440, 1000), ThemeMode.light, then: (t) async {
+        await t.tap(find.text('Синхронизация').first);
+        await t.pumpAndSettle();
+      }));
+  testWidgets('sync group', (t) async {
+    extraPrefs = {
+      'sync.config': jsonEncode({
+        'key': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+        'name': 'Компьютер · DESKTOP',
+        'peers': {
+          'p1': {'name': 'Телефон', 'address': '192.168.1.23', 'port': 47820,
+                 'lastSync': DateTime.now().subtract(const Duration(minutes: 3)).millisecondsSinceEpoch},
+          'p2': {'name': 'Ноутбук', 'address': '192.168.1.40', 'port': 47820},
+        },
+      }),
+    };
+    addTearDown(() => extraPrefs = {});
+    await _shot(t, 'sync_group_dark', const Size(1440, 1000), ThemeMode.dark, then: (t) async {
+      await t.tap(find.text('Синхронизация').first);
+      await t.pumpAndSettle();
+    });
+  });
+  testWidgets('phone more', (t) => _shot(t, 'phone_more_light', const Size(400, 860), ThemeMode.light, then: (t) async {
+        await t.tap(find.text('Ещё'));
         await t.pumpAndSettle();
       }));
 }

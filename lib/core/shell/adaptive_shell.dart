@@ -76,21 +76,83 @@ class AdaptiveShell extends ConsumerWidget {
             onPressed: () => _quickAdd(context),
             child: const Icon(Icons.add),
           ),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: index,
-            onDestinationSelected: go,
-            labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-            destinations: [
-              for (final d in destinations)
-                NavigationDestination(
-                  icon: _BadgedIcon(destination: d, icon: d.icon),
-                  selectedIcon: _BadgedIcon(destination: d, icon: d.selectedIcon),
-                  label: d.shortLabel ?? d.label,
-                ),
-            ],
+          bottomNavigationBar: _PhoneNavBar(
+            destinations: destinations,
+            selected: index,
+            onSelect: go,
           ),
         );
     }
+  }
+}
+
+/// Нижняя панель телефона: не больше 5 пунктов, остальные — в «Ещё».
+class _PhoneNavBar extends StatelessWidget {
+  const _PhoneNavBar({
+    required this.destinations,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  static const maxItems = 5;
+
+  final List<ModuleDestination> destinations;
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final overflow = destinations.length > maxItems;
+    final visible = overflow ? destinations.take(maxItems - 1).toList() : destinations;
+    final selectedVisible = selected < visible.length ? selected : visible.length;
+
+    return NavigationBar(
+      selectedIndex: selectedVisible,
+      labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+      onDestinationSelected: (i) {
+        if (i < visible.length) return onSelect(i);
+        showModalBottomSheet<void>(
+          context: context,
+          useRootNavigator: true,
+          showDragHandle: true,
+          builder: (ctx) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var j = visible.length; j < destinations.length; j++)
+                  ListTile(
+                    leading: _BadgedIcon(
+                        destination: destinations[j],
+                        icon: j == selected
+                            ? destinations[j].selectedIcon
+                            : destinations[j].icon),
+                    title: Text(destinations[j].label),
+                    selected: j == selected,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      onSelect(j);
+                    },
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+      destinations: [
+        for (final d in visible)
+          NavigationDestination(
+            icon: _BadgedIcon(destination: d, icon: d.icon),
+            selectedIcon: _BadgedIcon(destination: d, icon: d.selectedIcon),
+            label: d.shortLabel ?? d.label,
+          ),
+        if (overflow)
+          const NavigationDestination(
+            icon: Icon(Icons.more_horiz),
+            label: 'Ещё',
+          ),
+      ],
+    );
   }
 }
 

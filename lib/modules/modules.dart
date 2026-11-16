@@ -4,6 +4,7 @@ import 'kanban/kanban_module.dart';
 import 'my_day/my_day_module.dart';
 import 'reminders/reminders_module.dart';
 import 'settings/settings_module.dart';
+import 'sync/sync_module.dart';
 
 /// Единственное место, где модули подключаются к приложению.
 /// Добавить функцию — добавить строку; убрать — удалить строку.
@@ -12,5 +13,6 @@ const List<AppModule> registeredModules = [
   MyDayModule(),
   RemindersModule(),
   AiModule(),
+  SyncModule(),
   SettingsModule(),
 ];

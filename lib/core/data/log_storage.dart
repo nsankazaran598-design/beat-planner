@@ -57,11 +57,27 @@ class FileLogStorage implements LogStorage {
     return result;
   }
 
+  final Set<String> _checkedTail = {};
+
   @override
   Future<void> append(String deviceId, List<String> lines) async {
     await _logDir.create(recursive: true);
-    await _logFile(deviceId).writeAsString(
-      '${lines.join('\n')}\n',
+    final file = _logFile(deviceId);
+    var prefix = '';
+    // Если прошлый запуск оборвал последнюю строку, начинаем с новой строки,
+    // чтобы не склеить запись с обрывком.
+    if (_checkedTail.add(deviceId) && await file.exists()) {
+      final len = await file.length();
+      if (len > 0) {
+        final raf = await file.open();
+        await raf.setPosition(len - 1);
+        final last = await raf.readByte();
+        await raf.close();
+        if (last != 0x0A) prefix = '\n';
+      }
+    }
+    await file.writeAsString(
+      '$prefix${lines.join('\n')}\n',
       mode: FileMode.append,
       flush: true,
     );
