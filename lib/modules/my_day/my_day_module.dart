@@ -1,7 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/module/app_module.dart';
-import '../../core/shell/page_scaffold.dart';
+import 'day_page.dart';
+import 'day_providers.dart';
+import 'widgets/day_item_editor.dart';
 
 class MyDayModule extends AppModule {
   const MyDayModule();
@@ -21,14 +24,14 @@ class MyDayModule extends AppModule {
           icon: Icons.today_outlined,
           selectedIcon: Icons.today,
           order: 20,
-          builder: (_) => const PageScaffold(
-            breadcrumb: 'Личное пространство / Расписание',
-            title: 'Мой день',
-            body: ComingSoon(
-              icon: Icons.today_outlined,
-              text: 'Расписание дня появится в v0.3',
-            ),
-          ),
+          builder: (_) => const DayPage(),
         ),
       ];
+
+  @override
+  Future<void> Function(BuildContext context)? get quickAdd => (context) {
+        final date = ProviderScope.containerOf(context, listen: false)
+            .read(selectedDateProvider);
+        return showDayItemEditor(context, date: date);
+      };
 }

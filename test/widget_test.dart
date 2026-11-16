@@ -80,6 +80,29 @@ void main() {
     expect(find.text('Собрать обратную связь'), findsOneWidget);
   });
 
+  testWidgets('scheduling an item in My Day', (tester) async {
+    await _pumpApp(tester, const Size(1440, 1000));
+    await tester.tap(find.text('Мой день').first);
+    await tester.pumpAndSettle();
+    expect(find.text('На этот день ничего не запланировано'), findsOneWidget);
+
+    await tester.tap(find.text('Запланировать').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.descendant(of: find.byType(Dialog), matching: find.byType(TextField)).first,
+        'Купить продукты');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Добавить'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Купить продукты'), findsOneWidget);
+    expect(find.text('Запланировано 1 дело'), findsOneWidget);
+
+    await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+    expect(find.text('Запланировано 1 дело · 1 уже выполнено'), findsOneWidget);
+  });
+
   test('disabling a module removes it from navigation', () async {
     final c = await _container();
     expect(c.read(destinationsProvider).any((d) => d.path == '/ai'), isTrue);

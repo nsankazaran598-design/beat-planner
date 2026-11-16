@@ -1,5 +1,7 @@
 import '../../core/data/data_store.dart';
 
+export '../../core/ui/format.dart' show encodeDate;
+
 abstract final class KanbanEntities {
   static const project = 'project';
   static const column = 'column';
@@ -99,8 +101,3 @@ class Task {
     );
   }
 }
-
-/// Дата без времени в формате `2026-11-18` для хранения.
-String encodeDate(DateTime d) =>
-    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-'
-    '${d.day.toString().padLeft(2, '0')}';
