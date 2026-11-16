@@ -35,11 +35,12 @@ class DesktopSettingsController extends Notifier<DesktopSettings> {
     final prefs = ref.watch(sharedPreferencesProvider);
     if (isDesktopWindows) {
       // Состояние автозапуска хранит сама Windows (реестр).
-      launchAtStartup.isEnabled().then((v) {
+      // Если автозапуск не настроен (нет окна), плагин бросает исключение.
+      Future(launchAtStartup.isEnabled).then((v) {
         if (v != state.launchAtStartup) {
           state = DesktopSettings(closeToTray: state.closeToTray, launchAtStartup: v);
         }
-      });
+      }).catchError((Object e) => debugPrint('autostart: $e'));
     }
     return DesktopSettings(closeToTray: prefs.getBool(_kTray) ?? true);
   }
@@ -50,8 +51,12 @@ class DesktopSettingsController extends Notifier<DesktopSettings> {
   }
 
   Future<void> setLaunchAtStartup(bool v) async {
-    v ? await launchAtStartup.enable() : await launchAtStartup.disable();
-    state = DesktopSettings(closeToTray: state.closeToTray, launchAtStartup: v);
+    try {
+      v ? await launchAtStartup.enable() : await launchAtStartup.disable();
+      state = DesktopSettings(closeToTray: state.closeToTray, launchAtStartup: v);
+    } catch (e) {
+      debugPrint('autostart: $e');
+    }
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/data/providers.dart';
+import '../../core/secrets.dart';
 import '../../core/settings/settings_controller.dart';
 import 'discovery.dart';
 import 'sync_crypto.dart';
@@ -128,6 +129,11 @@ final syncControllerProvider =
 /// Управляет группой синхронизации и обменом с устройствами.
 class SyncController extends Notifier<SyncState> {
   static const _kConfig = 'sync.config';
+  static const _kKeySecret = 'sync.groupKey';
+
+  /// Есть ли группа (сам ключ — в защищённом хранилище).
+  bool _hasGroup = false;
+  bool _keyLoaded = false;
 
   SyncTransport? _transport;
   LanDiscovery? _discovery;
@@ -139,13 +145,15 @@ class SyncController extends Notifier<SyncState> {
 
   @override
   SyncState build() {
-    ref.onDispose(_stopRuntime);
+    ref.onDispose(() => _stopRuntime(updateState: false));
     final raw = ref.read(sharedPreferencesProvider).getString(_kConfig);
     if (raw == null) return SyncState(deviceName: defaultDeviceName());
     try {
       final j = jsonDecode(raw) as Map<String, Object?>;
       final peers = (j['peers'] as Map?) ?? const {};
+      _hasGroup = j['inGroup'] == true || j['key'] != null;
       return SyncState(
+        // Старые версии хранили ключ прямо в настройках — он переедет при сохранении.
         groupKey: j['key'] as String?,
         deviceName: (j['name'] as String?) ?? defaultDeviceName(),
         peers: [
@@ -158,14 +166,31 @@ class SyncController extends Notifier<SyncState> {
     }
   }
 
-  Future<void> _save() => ref.read(sharedPreferencesProvider).setString(
-        _kConfig,
-        jsonEncode({
-          'key': state.groupKey,
-          'name': state.deviceName,
-          'peers': {for (final p in state.peers) p.id: p.toJson()},
-        }),
-      );
+  Future<void> _save() async {
+    await ref.read(secretStoreProvider).write(_kKeySecret, state.groupKey);
+    _hasGroup = state.inGroup;
+    await ref.read(sharedPreferencesProvider).setString(
+          _kConfig,
+          jsonEncode({
+            'inGroup': state.inGroup,
+            'name': state.deviceName,
+            'peers': {for (final p in state.peers) p.id: p.toJson()},
+          }),
+        );
+  }
+
+  /// Загружает ключ группы из защищённого хранилища (один раз).
+  Future<void> _loadKey() async {
+    if (_keyLoaded) return;
+    _keyLoaded = true;
+    if (state.groupKey != null) {
+      await _save(); // перенос ключа из старых настроек
+      return;
+    }
+    if (!_hasGroup) return;
+    final key = await ref.read(secretStoreProvider).read(_kKeySecret);
+    if (key != null) state = state.copyWith(groupKey: key);
+  }
 
   PeerHello _hello() => PeerHello(
         deviceId: ref.read(dataStoreProvider).deviceId,
@@ -177,6 +202,7 @@ class SyncController extends Notifier<SyncState> {
 
   /// Создаёт группу (если её нет) и возвращает код подключения.
   Future<PairingCode> pairingCode() async {
+    await _loadKey();
     if (!state.inGroup) {
       state = state.copyWith(groupKey: GroupKey.generate().toBase64());
       await _save();
@@ -238,6 +264,7 @@ class SyncController extends Notifier<SyncState> {
 
   /// Запускает сервер, поиск и периодический обмен (если есть группа).
   Future<void> start() async {
+    await _loadKey();
     if (!state.inGroup || state.running) return;
     final store = ref.read(dataStoreProvider);
     final key = GroupKey.fromBase64(state.groupKey!);
@@ -273,7 +300,7 @@ class SyncController extends Notifier<SyncState> {
     unawaited(syncAll());
   }
 
-  void _stopRuntime() {
+  void _stopRuntime({bool updateState = true}) {
     _debounce?.cancel();
     _periodic?.cancel();
     _beacons?.cancel();
@@ -283,7 +310,7 @@ class SyncController extends Notifier<SyncState> {
     _transport?.stop();
     _transport = null;
     _discovery = null;
-    if (state.running) state = state.copyWith(running: false);
+    if (updateState && state.running) state = state.copyWith(running: false);
   }
 
   /// Обмен со всеми известными устройствами.

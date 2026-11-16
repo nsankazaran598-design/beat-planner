@@ -1,9 +1,17 @@
 import 'package:beat/core/data/data_store.dart';
 import 'package:beat/core/data/log_storage.dart';
+import 'dart:convert';
+
+import 'package:beat/core/data/providers.dart';
+import 'package:beat/core/secrets.dart';
+import 'package:beat/core/settings/settings_controller.dart';
+import 'package:beat/modules/sync/sync_controller.dart';
 import 'package:beat/modules/sync/sync_crypto.dart';
 import 'package:beat/modules/sync/sync_protocol.dart';
 import 'package:beat/modules/sync/sync_transport.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<DataStore> device(String id) => DataStore.open(MemoryLogStorage(deviceId: id));
 
@@ -126,5 +134,28 @@ void main() {
       await a.write('task', 'secret', {'title': 'secret'});
       await expectLater(stranger.syncWith('127.0.0.1', ta.port!), throwsA(anything));
     });
+  });
+
+  test('group key moves from settings to secure storage', () async {
+    final key = GroupKey.generate().toBase64();
+    // ignore: invalid_use_of_visible_for_testing_member
+    SharedPreferences.setMockInitialValues({
+      'sync.config': jsonEncode({'key': key, 'name': 'ПК', 'peers': {}}),
+    });
+    final prefs = await SharedPreferences.getInstance();
+    final secrets = MemorySecretStore();
+    final c = ProviderContainer(overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      dataStoreProvider.overrideWithValue(await device('a')),
+      secretStoreProvider.overrideWithValue(secrets),
+    ]);
+    addTearDown(c.dispose);
+
+    expect(c.read(syncControllerProvider).groupKey, key);
+    await c.read(syncControllerProvider.notifier).rename('Компьютер');
+    expect(await secrets.read('sync.groupKey'), key);
+    final saved = jsonDecode(prefs.getString('sync.config')!) as Map;
+    expect(saved.containsKey('key'), isFalse);
+    expect(saved['inGroup'], isTrue);
   });
 }

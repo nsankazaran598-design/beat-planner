@@ -22,3 +22,6 @@ final dataSnapshotProvider = Provider<DataSnapshot>((ref) {
   ref.onDispose(() => store.removeListener(onChange));
   return DataSnapshot(store);
 });
+
+/// Папка с данными приложения (null — в тестах).
+final dataDirProvider = Provider<String?>((ref) => null);

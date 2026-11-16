@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +23,17 @@ class AdaptiveShell extends ConsumerWidget {
     void go(int i) => context.go(destinations[i].path);
 
     final layout = Breakpoints.of(context);
+    // Ctrl+N — новая задача (на клавиатуре).
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyN, control: true): () => _quickAdd(context),
+      },
+      child: Focus(autofocus: true, child: _layout(context, ref, layout, destinations, index, go)),
+    );
+  }
+
+  Widget _layout(BuildContext context, WidgetRef ref, LayoutSize layout,
+      List<ModuleDestination> destinations, int index, void Function(int) go) {
     switch (layout) {
       case LayoutSize.expanded:
         return Scaffold(

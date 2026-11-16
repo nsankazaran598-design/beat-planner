@@ -220,6 +220,10 @@ void main() {
       await t.pumpAndSettle();
     });
   });
+  testWidgets('settings', (t) => _shot(t, 'settings_dark', const Size(1440, 1000), ThemeMode.dark, then: (t) async {
+        await t.tap(find.text('Настройки').first);
+        await t.pumpAndSettle();
+      }));
 }
 
 class _FakeSession implements LlmSession {

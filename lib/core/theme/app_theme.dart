@@ -82,6 +82,8 @@ abstract final class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
+      // Roboto из макета; на Windows иначе был бы Segoe UI.
+      fontFamily: 'Roboto',
       scaffoldBackgroundColor: scheme.surface,
       visualDensity: VisualDensity.standard,
     );

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show Color;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -72,6 +73,7 @@ class LocalNotificationBackend implements NotificationBackend {
     importance: Importance.high,
     priority: Priority.high,
     category: AndroidNotificationCategory.reminder,
+    color: Color(0xFF6750A4),
   );
 
   static const _details = NotificationDetails(
@@ -107,7 +109,7 @@ class LocalNotificationBackend implements NotificationBackend {
 
     await _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('ic_stat_beat'),
         windows: WindowsInitializationSettings(
           appName: 'beat',
           appUserModelId: 'BeatPlanner.Beat',

@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.6.0+6
+version: 1.0.0+7
 
 environment:
   sdk: ^3.14.0
@@ -51,6 +51,7 @@ dependencies:
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.5.0
   flutter_secure_storage: ^10.3.4
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +63,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -76,6 +78,14 @@ flutter:
   assets:
     - assets/tray_icon.png
     - assets/tray_icon.ico
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/roboto-regular.ttf
+        - asset: assets/fonts/roboto-medium.ttf
+          weight: 500
+        - asset: assets/fonts/roboto-bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -107,3 +117,14 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  image_path: assets/icon/icon.png
+  android: true
+  adaptive_icon_background: "#6750A4"
+  adaptive_icon_foreground: assets/icon/foreground.png
+  min_sdk_android: 21
+  windows:
+    generate: true
+    image_path: assets/icon/icon.png
+    icon_size: 256

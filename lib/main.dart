@@ -18,13 +18,13 @@ Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final supportDir = await getApplicationSupportDirectory();
-  final store = await DataStore.open(
-    FileLogStorage(Directory('${supportDir.path}${Platform.pathSeparator}data')),
-  );
+  final dataDir = '${supportDir.path}${Platform.pathSeparator}data';
+  final store = await DataStore.open(FileLogStorage(Directory(dataDir)));
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       dataStoreProvider.overrideWithValue(store),
+      dataDirProvider.overrideWithValue(dataDir),
     ],
   );
   await DesktopIntegration.init(container, minimized: args.contains(minimizedFlag));

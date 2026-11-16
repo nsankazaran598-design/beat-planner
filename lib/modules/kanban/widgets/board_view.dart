@@ -43,6 +43,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
           column: c,
           tasks: tasks[c.id] ?? const [],
           width: width,
+          isLast: c.id == columns.last.id,
         );
 
     if (compact) {
@@ -115,12 +116,14 @@ class _ColumnView extends ConsumerStatefulWidget {
     required this.column,
     required this.tasks,
     required this.width,
+    this.isLast = false,
   });
 
   final Project project;
   final BoardColumn column;
   final List<Task> tasks;
   final double width;
+  final bool isLast;
 
   @override
   ConsumerState<_ColumnView> createState() => _ColumnViewState();
@@ -175,6 +178,7 @@ class _ColumnViewState extends ConsumerState<_ColumnView> {
                       task: t,
                       width: widget.width == double.infinity ? 300 : widget.width - 20,
                       touch: _touch,
+                      done: widget.isLast,
                       onDropBefore: (id) => _move(id, before: t.id),
                       onTap: () => showTaskEditor(context,
                           projectId: widget.project.id, task: t),
@@ -244,11 +248,13 @@ class _DraggableTask extends StatefulWidget {
     required this.touch,
     required this.onDropBefore,
     required this.onTap,
+    this.done = false,
   });
 
   final Task task;
   final double width;
   final bool touch;
+  final bool done;
   final ValueChanged<String> onDropBefore;
   final VoidCallback onTap;
 
@@ -262,12 +268,12 @@ class _DraggableTaskState extends State<_DraggableTask> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final card = TaskCard(task: widget.task, onTap: widget.onTap);
+    final card = TaskCard(task: widget.task, onTap: widget.onTap, done: widget.done);
     final feedback = Material(
       color: Colors.transparent,
       elevation: 6,
       borderRadius: BorderRadius.circular(12),
-      child: SizedBox(width: widget.width, child: TaskCard(task: widget.task)),
+      child: SizedBox(width: widget.width, child: TaskCard(task: widget.task, done: widget.done)),
     );
     final dimmed = Opacity(opacity: 0.35, child: card);
 
