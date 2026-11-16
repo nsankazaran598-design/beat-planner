@@ -49,6 +49,13 @@ abstract class AppModule {
   /// Экраны модуля, которые попадают в навигацию.
   List<ModuleDestination> get destinations => const [];
 
+  /// Секция в боковом меню десктопа (например, «Мои проекты»).
+  WidgetBuilder? get sidebarSection => null;
+
+  /// Обработчик кнопки «Новая задача» в оболочке. Если её предлагают
+  /// несколько модулей, побеждает модуль текущего экрана, иначе первый.
+  Future<void> Function(BuildContext context)? get quickAdd => null;
+
   /// Вызывается один раз при старте приложения, если модуль включён.
   Future<void> init() async {}
 }

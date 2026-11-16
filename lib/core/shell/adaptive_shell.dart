@@ -26,7 +26,15 @@ class AdaptiveShell extends ConsumerWidget {
       case LayoutSize.expanded:
         return Scaffold(
           body: Row(children: [
-            _Sidebar(destinations: destinations, selected: index, onSelect: go),
+            _Sidebar(
+              destinations: destinations,
+              selected: index,
+              onSelect: go,
+              sections: [
+                for (final m in ref.watch(enabledModulesProvider))
+                  ?m.sidebarSection,
+              ],
+            ),
             Expanded(child: child),
           ]),
         );
@@ -87,9 +95,23 @@ class AdaptiveShell extends ConsumerWidget {
 }
 
 void _quickAdd(BuildContext context) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Создание задач появится в v0.2')),
-  );
+  final container = ProviderScope.containerOf(context, listen: false);
+  final modules = container.read(enabledModulesProvider);
+  final location =
+      GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
+  AppModule? current;
+  for (final m in modules) {
+    if (m.destinations.any((d) => location.startsWith(d.path))) current = m;
+  }
+  final handler = current?.quickAdd ??
+      modules.map((m) => m.quickAdd).nonNulls.firstOrNull;
+  if (handler != null) {
+    handler(context);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Нет модулей, которые умеют создавать задачи')),
+    );
+  }
 }
 
 class _Sidebar extends StatelessWidget {
@@ -97,11 +119,13 @@ class _Sidebar extends StatelessWidget {
     required this.destinations,
     required this.selected,
     required this.onSelect,
+    this.sections = const [],
   });
 
   final List<ModuleDestination> destinations;
   final int selected;
   final ValueChanged<int> onSelect;
+  final List<WidgetBuilder> sections;
 
   @override
   Widget build(BuildContext context) {
@@ -110,9 +134,8 @@ class _Sidebar extends StatelessWidget {
     return Container(
       width: 232,
       color: scheme.surfaceContainerLow,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
@@ -130,11 +153,14 @@ class _Sidebar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-            onPressed: () => _quickAdd(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Новая задача'),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+              onPressed: () => _quickAdd(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Новая задача'),
+            ),
           ),
           const SizedBox(height: 24),
           for (var i = 0; i < destinations.length; i++)
@@ -146,6 +172,10 @@ class _Sidebar extends StatelessWidget {
                 onTap: () => onSelect(i),
               ),
             ),
+          for (final section in sections) ...[
+            const SizedBox(height: 24),
+            Builder(builder: section),
+          ],
         ],
       ),
     );

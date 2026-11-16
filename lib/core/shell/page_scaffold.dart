@@ -11,6 +11,7 @@ class PageScaffold extends StatelessWidget {
     this.breadcrumb,
     this.subtitle,
     this.action,
+    this.titleTrailing,
     required this.body,
   });
 
@@ -18,6 +19,9 @@ class PageScaffold extends StatelessWidget {
   final String? breadcrumb;
   final String? subtitle;
   final Widget? action;
+
+  /// Виджет сразу после заголовка (например, меню выбора проекта).
+  final Widget? titleTrailing;
   final Widget body;
 
   @override
@@ -46,10 +50,16 @@ class PageScaffold extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: compact
-                            ? theme.textTheme.headlineSmall
-                            : theme.textTheme.headlineMedium),
+                    Row(children: [
+                      Flexible(
+                        child: Text(title,
+                            overflow: TextOverflow.ellipsis,
+                            style: compact
+                                ? theme.textTheme.headlineSmall
+                                : theme.textTheme.headlineMedium),
+                      ),
+                      ?titleTrailing,
+                    ]),
                     if (subtitle != null) ...[
                       const SizedBox(height: 6),
                       Text(subtitle!,
